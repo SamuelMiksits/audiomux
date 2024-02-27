@@ -1,4 +1,40 @@
-View/switch sinks and sources through pactl with a lot less typing and or headache. Example output from my system:
+# Audiomux
+
+View/switch sinks and sources through pactl with a lot less typing and or headache. 
+
+## Requirements
+- Audio server such as pipewire/pulseaudio
+- The command ```pactl``` (from package ```pulseaudio-utils``` in Debian)
+
+Example output from my system:
+
+![Audiomux output figure](/images/example.png)
+
+
+## Usage
+
+Launch the application with ```python3 /path/to/audiomux.py```
+
+### Navigation
+
+- Move down with j/down arrow.
+
+- Move up with k/up arrow.
+
+There are a couple of special navigation options:
+
+- Go directly to a line number. If the number is single digit, enter the number and press enter. If the number is double digit, only press the two numbers.
+
+- If you wish to go up a single digit amount of lines at once, you can do so with for instance '5j' if you want to go 5 lines down and '3k' if you want to go up 3 lines (this cannot be done with arrow keys).
+
+### Set device
+
+- Set device active device with 's', this issues the ```pactl set-default-(sink|source)``` command for the highlighted device.
+
+
+## Older version
+
+Here is the output from the old CLI for my system:
 
 ```
 Active sink/source:
@@ -21,3 +57,5 @@ Sources:
 11. Meteor condenser microphone Analog Stereo
 Select sink/source with number, 'e' for exit, any input to refresh list
 ```
+
+I think that this version is a lot uglier, but can be a bit more powerful. Go to release v0.1.0 if you prefer this version
