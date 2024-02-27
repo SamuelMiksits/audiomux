@@ -74,8 +74,6 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
     #Clears the screen from previous iterations
     menu.clear()
 
-    #menu.addstr("\n") #Line will be replaced by box
-
     #Print title
     menu.move(1,2)
     menu.addstr("{:^78}".format("Audiomux - v0.2.0"))
@@ -84,10 +82,8 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
     #Print "sinks" header
     menu.move(3, 0)
     menu.addstr("  {:<65}  {:<7}".format("Sink/Output:", "Active"))
-    #menu.addstr("Sink/Output: \t\t\t\t\t Active\t\t Default\n")
     menu.hline(4, 0, 0, 79)
     menu.move(5, 0)
-    #menu.addstr("\n") #Line will be replaced by hline 
 
     #Print sinks
     for i in range(len(sinks)):
@@ -109,7 +105,6 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
     menu.hline(5 + sinkCount, 0, 0, 79)
     menu.move(6 + sinkCount, 0)
     menu.addstr("  {:<65}  {:<7}".format("Source/Input:", "Active"))
-    #menu.addstr("Source/Input: \t\t\t\t Active\t\t Default\n")
     menu.hline(7 + sinkCount, 0, 0, 79)
     menu.move(8 + sinkCount, 0)
 
@@ -132,7 +127,7 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
     #Print "hotkeys"
     menu.hline(8 + sinkCount + sourceCount, 0, 0, 79)
     menu.move(9 + sinkCount + sourceCount, 2)
-    menu.addstr(" Set active: s     Down: ")
+    menu.addstr("  Set active: s    Down: ")
     menu.addch(curses.ACS_DARROW)
     menu.addstr("/j    Up: ")
     menu.addch(curses.ACS_UARROW)
@@ -151,9 +146,6 @@ def main():
     #Disable cursor
     curses.curs_set(0)
 
-    #sinks = [["sink1", "part2"], ["sink2"], ["sink3"], ["sink4"], ["sink5"]]
-    #sources = [["source1", "part3"], ["source2"], ["source3", "part5"], 
-    #           ["source4"], ["source5"], ["source6"], ["source7"],]
     numbers = [ord('1'), ord('2'), ord('3'), ord('4'), ord('5'),
                ord('6'), ord('7'), ord('8'), ord('9')]
 
