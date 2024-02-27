@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import curses
 
 #returns a list of the sinks
 def getSinks():
@@ -46,79 +47,272 @@ def parseSources(sourcesRaw):
             tmpSource = list()
     return sources
 
+def isDefault(default):
+    if default:
+        return "X"
+    else:
+        return ""
+
+#Function for printing sink/source
+def printSinkSource(menu, strings, index, default):
+
+    if len(strings) == 1:
+        menu.addstr("  {:<3} {:<60}   {:<10}\n".format(str(index + 1) + ".", 
+                    strings[0], isDefault(default)))
+
+    else:
+        menu.addstr("  {:<3} {:<60}   {:<10}\n".format(str(index + 1) + ".", 
+                    strings[0], isDefault(default)))
+        for i in range(1, len(strings)):
+            menu.addstr("{:<6}{:<60}   {:<10}\n".format("", strings[i], ""))
+            
+
+# Function that prints the curses menu, takes the menu object
+def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount, 
+             defaultSink, defaultSource):
+    
+    #Clears the screen from previous iterations
+    menu.clear()
+
+    #menu.addstr("\n") #Line will be replaced by box
+
+    #Print title
+    menu.move(1,2)
+    menu.addstr("{:^78}".format("Audiomux - v0.2.0"))
+    
+
+    #Print "sinks" header
+    menu.move(3, 0)
+    menu.addstr("  {:<65}  {:<7}".format("Sink/Output:", "Active"))
+    #menu.addstr("Sink/Output: \t\t\t\t\t Active\t\t Default\n")
+    menu.hline(4, 0, 0, 79)
+    menu.move(5, 0)
+    #menu.addstr("\n") #Line will be replaced by hline 
+
+    #Print sinks
+    for i in range(len(sinks)):
+        if i == index:
+            menu.attron(curses.A_REVERSE)
+            if i == defaultSink:
+                printSinkSource(menu, sinks[i][1], i, True)
+            else:
+                printSinkSource(menu, sinks[i][1], i, False)
+            menu.attroff(curses.A_REVERSE)
+        else:
+            if i == defaultSink:
+                printSinkSource(menu, sinks[i][1], i, True)
+            else:
+                printSinkSource(menu, sinks[i][1], i, False)
+
+
+    #Print "sources" header
+    menu.hline(5 + sinkCount, 0, 0, 79)
+    menu.move(6 + sinkCount, 0)
+    menu.addstr("  {:<65}  {:<7}".format("Source/Input:", "Active"))
+    #menu.addstr("Source/Input: \t\t\t\t Active\t\t Default\n")
+    menu.hline(7 + sinkCount, 0, 0, 79)
+    menu.move(8 + sinkCount, 0)
+
+    #Print sources
+    #Print sinks
+    for i in range(len(sources)):
+        if i + len(sinks) == index:
+            menu.attron(curses.A_REVERSE)
+            if i == defaultSource:
+                printSinkSource(menu, sources[i][1], i + len(sinks), True)
+            else:
+                printSinkSource(menu, sources[i][1], i + len(sinks), False)
+            menu.attroff(curses.A_REVERSE)
+        else:
+            if i == defaultSource:
+                printSinkSource(menu, sources[i][1], i + len(sinks), True)
+            else:
+                printSinkSource(menu, sources[i][1], i + len(sinks), False)
+
+    #Print "hotkeys"
+    menu.hline(8 + sinkCount + sourceCount, 0, 0, 79)
+    menu.move(9 + sinkCount + sourceCount, 2)
+    menu.addstr(" Set active: s     Down: ")
+    menu.addch(curses.ACS_DARROW)
+    menu.addstr("/j    Up: ")
+    menu.addch(curses.ACS_UARROW)
+    menu.addstr("/k    Quit: e/q/<RET>    Refresh: Any")
+
+    #Print box
+    menu.box(0,0)
+    menu.refresh()
+
 def main():
 
-    exitProgram = False 
+    stdscr = curses.initscr()
+    stdscr.clear()
+    curses.noecho()
+    curses.cbreak()
+    #Disable cursor
+    curses.curs_set(0)
 
-    while(not exitProgram):
-        
-        os.system("clear")
+    #sinks = [["sink1", "part2"], ["sink2"], ["sink3"], ["sink4"], ["sink5"]]
+    #sources = [["source1", "part3"], ["source2"], ["source3", "part5"], 
+    #           ["source4"], ["source5"], ["source6"], ["source7"],]
+    numbers = [ord('1'), ord('2'), ord('3'), ord('4'), ord('5'),
+               ord('6'), ord('7'), ord('8'), ord('9')]
+
+    ch = 0
+    index = 0
+
+    menu = None
+
+    #width:
+    # -Original implementation, set to 80
+    # -(Potential future feature, calculate maximum allowed rows, adjust text 
+    # accordingly)
+    width = 80
+
+    # newwin:
+    # height, width, offsety, offsetx
+    # set offset height/width to make it not snug up against the edge of the 
+    # terminal 
+    while True:
+
         sinks = getSinks()
         sources = getSources()
-        fullList = sinks.copy()
-        for i in range(len(sources)):
-            fullList.append(sources[i])
 
         defaultSink = getDefaultSink()
         defaultSource = getDefaultSource()
 
-        defaultSinkAt = 0 #find where it is in the sinks list, grab description
+        defaultSinkAt = 0
         defaultSourceAt = 0
 
+        #Find default sink
         for i in range(len(sinks)):
             if defaultSink in sinks[i][0]:
                 defaultSinkAt = i
-        
+            
+        #Find default source
         for i in range(len(sources)):
             if defaultSource in sources[i][0]:
                 defaultSourceAt = i
 
-        print("Active sink/source:")
-
-        print("Default sink: ", end="")
-        print(sinks[defaultSinkAt][1])
-
-        print("Default source: ", end="")
-        print(sources[defaultSourceAt][1])
-
-        print("------------------------------")
-
-        print("Selectable sinks/sources:")
-
-        j = 0
-        print("Sinks: ")
+        #Convert sink description string into chunks of 60 characters
         for i in range(len(sinks)):
-            print(str(j + 1) + ". ", end="")
-            print(sinks[i][1])
-            j += 1
+            
+            stringRaw = sinks[i][1]
+            tmpList = list()
+            while len(stringRaw) > 60:
+                tmpList.append(stringRaw[0:60])
+                stringRaw = stringRaw[60:]
 
-        print("Sources: ")
+            tmpList.append(stringRaw)
+            sinks[i][1] = tmpList
+
+
+        #Convert source description string into chunks of 60 characters
         for i in range(len(sources)):
-            print(str(j + 1) + ". ", end="")
-            print(sources[i][1])
-            j += 1
+            
+            stringRaw = sources[i][1]
+            tmpList = list()
+            while len(stringRaw) > 60:
+                tmpList.append(stringRaw[0:60])
+                stringRaw = stringRaw[60:]
 
-        print("Select sink/source with number, 'e' for exit, any input to refresh list")
-        userInput = input()
+            tmpList.append(stringRaw)
+            sources[i][1] = tmpList
 
-        userInputParsed = -1
+        #Size of the window:
+        #height:
+        # -1 row of border
+        # -1 row for title
+        # -1 row for border
+        # -1 row for the "sinks" header
+        # -1 row for another border
+        # -The amount of sinks
+        # -1 row for another border
+        # -1 row for the "sources" border
+        # -1 row for another border
+        # -The amount of sources
+        # -1 row for another border
+        # -1 row for the hotkeys
+        # -1 row of empty space
+        # -1 row for navigator (type number and jump to that item)
+        # -1 row for the bottom border
 
-        try:
-            userInputParsed = int(userInput) - 1
-        except:
-            try:
-                if userInput == "e":
-                    exitProgram = True
-                    continue              
-            except:
-                pass
+        sinkCount = 0
+        for i in range(len(sinks)):
+            sinkCount += len(sinks[i][1])
+        sourceCount = 0
+        for i in range(len(sources)):
+            sourceCount += len(sources[i][1])
+
+        height = 5 + sinkCount + 3 + sourceCount + 5
+
+        #Clears menu, needed in case old menu had different size than new menu
+        if menu != None:
+            menu.clear()
+            menu.refresh()
+
+        #Create menu
+
+        menu = curses.newwin(height, width, 0, 0)
+        menu.keypad(True)
+        menu.box
+    
+        drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
+                    defaultSinkAt, defaultSourceAt)
         
-        if (userInputParsed >= 0) and (userInputParsed < len(fullList)):
-            if userInputParsed < len(sinks):
-                os.system("pactl set-default-sink " + sinks[userInputParsed][0]) 
+        try:
+            ch = menu.getch()
+        except KeyboardInterrupt:
+            break
 
-            if userInputParsed >= len(sinks):
-                os.system("pactl set-default-source " + sources[userInputParsed - len(sinks)][0]) 
+        if (ch == curses.KEY_DOWN or ch == ord('j')) and \
+            (index < (len(sinks) + len(sources) - 1)):
+            index += 1
+
+        if (ch == curses.KEY_UP or ch == ord('k')) and \
+            (index > 0):
+            index -= 1
+
+        if (ch in numbers):
+            menu.move(5 + sinkCount + 3 + sourceCount + 5 - 2 , 2)
+            menu.addstr(str(ch - 48))
+            menu.refresh()
+            
+            ch2 = menu.getch()
+
+            if ch2 in numbers or ch2 == 48:
+                index = (ch - 48)*10 + (ch2 - 48) - 1
+
+            elif ch2 == 10:
+                index = (ch - 48) - 1
+
+            elif ch2 == ord("j"):
+                index += (ch - 48)
+
+            elif ch2 == ord("k"):
+                index -= (ch - 48)
+
+            if index >= len(sources) + len(sinks):
+                index = len(sources) + len(sinks) - 1
+
+            if index <= 0:
+                index = 0
+         
+        # 10 = <RET> 
+        if ch == ord('q') or ch == ord('e') or ch == 10:
+            break 
+
+        if ch == ord('s'):
+            if index < len(sinks):
+                defaultSinkAt = index
+                os.system("pactl set-default-sink " + sinks[defaultSinkAt][0])
+            else:
+                defaultSourceAt = index - len(sinks)
+                os.system("pactl set-default-source " + \
+                          sources[defaultSourceAt][0])
+                
+        stdscr.clear()
+
+    curses.endwin()
 
 if __name__ == "__main__":
     main()
