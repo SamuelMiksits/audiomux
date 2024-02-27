@@ -29,7 +29,7 @@ There are a couple of special navigation options:
 
 ### Set device
 
-- Set device active device with 's', this issues the ```pactl set-default-(sink|source)``` command for the highlighted device.
+- Set active device with 's', this issues the ```pactl set-default-(sink|source)``` command for the highlighted device.
 
 
 ## Older version
