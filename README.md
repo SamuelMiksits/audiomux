@@ -17,9 +17,9 @@ Launch the application with ```python3 /path/to/audiomux.py```
 
 ### Navigation
 
-- Move down with k/down arrow.
+- Move down with j/down arrow.
 
-- Move up with j/up arrow.
+- Move up with k/up arrow.
 
 There are a couple of special navigation options:
 
