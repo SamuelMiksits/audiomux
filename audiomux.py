@@ -2,26 +2,27 @@ import os
 import re
 import subprocess
 import curses
+import curses.ascii
 
-#returns a list of the sinks
+# Returns a list of the sinks
 def getSinks():
     sinksRaw = re.split(r"[\t\n]", subprocess.getoutput("pactl list sinks"))
     return parseSinks(sinksRaw)
 
-#returns a list of the sources
+# Returns a list of the sources
 def getSources():
     sourcesRaw = re.split(r"[\t\n]", subprocess.getoutput("pactl list sources"))
     return parseSources(sourcesRaw)
 
-#grabs the default sink
+# Grabs the default sink
 def getDefaultSink():
     return subprocess.getoutput("pactl get-default-sink")
 
-#grabs the default source
+# Grabs the default source
 def getDefaultSource():
     return subprocess.getoutput("pactl get-default-source")
 
-#parses sinks string returned from shell
+# Parses sinks string returned from shell
 def parseSinks(sinksRaw):
     sinks = list()
     tmpSink = list()
@@ -34,7 +35,7 @@ def parseSinks(sinksRaw):
             tmpSink = list()
     return sinks
 
-#parses sources string returned from shell
+# Parses sources string returned from shell
 def parseSources(sourcesRaw):
     sources = list()
     tmpSource = list()
@@ -47,93 +48,116 @@ def parseSources(sourcesRaw):
             tmpSource = list()
     return sources
 
+# Return "X" is it is the default sink/source, else return empty string
 def isDefault(default):
     if default:
         return "X"
     else:
         return ""
 
-#Function for printing sink/source
-def printSinkSource(menu, strings, index, default):
+# Function for printing sink/source
+def printSinkSource(menu, strings, index, default, width):
 
     if len(strings) == 1:
-        menu.addstr("  {:<3} {:<60}   {:<10}\n".format(str(index + 1) + ".", 
-                    strings[0], isDefault(default)))
+        menu.addstr("  {:<3} {}{x}{:<7}\n".format(str(index + 1) + ".", 
+                    strings[0], isDefault(default), 
+                    x=" "*(width - 14 - len(strings[0]))))
 
     else:
-        menu.addstr("  {:<3} {:<60}   {:<10}\n".format(str(index + 1) + ".", 
-                    strings[0], isDefault(default)))
+        menu.addstr("  {:<3} {}{x}{:<7}\n".format(str(index + 1) + ".", 
+                    strings[0], isDefault(default), 
+                    x=" "*(width - 14 - len(strings[0]))))
         for i in range(1, len(strings)):
-            menu.addstr("{:<6}{:<60}   {:<10}\n".format("", strings[i], ""))
+            menu.addstr("{:<6}{}{x}{:<7}\n".format("", strings[i], "", 
+                    x=" "*(width - 14 - len(strings[i]))))
             
 
 # Function that prints the curses menu, takes the menu object
 def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount, 
-             defaultSink, defaultSource):
+             defaultSink, defaultSource, width):
     
-    #Clears the screen from previous iterations
+    # Clears the screen from previous iterations
     menu.clear()
 
-    #Print title
-    menu.move(1,2)
-    menu.addstr("{:^78}".format("Audiomux - v0.2.0"))
+    # Print title
+    menu.move(1,0)
+    menu.addstr("{x}{}{x}".format("Audiomux - v0.2.1", x=" "*int(width/2 - 8.5)))
     
-
-    #Print "sinks" header
+    # Print "sinks" header
     menu.move(3, 0)
-    menu.addstr("  {:<65}  {:<7}".format("Sink/Output:", "Active"))
-    menu.hline(4, 0, 0, 79)
+    menu.addstr("  {}{x}  {:<7}".format("Sink/Output:", "Active", x=" "*(width-24)))
+    menu.hline(4, 0, 0, width - 1) #0-based indexing, from 0 -> width - 1
     menu.move(5, 0)
 
-    #Print sinks
+    # Print sinks
     for i in range(len(sinks)):
         if i == index:
             menu.attron(curses.A_REVERSE)
             if i == defaultSink:
-                printSinkSource(menu, sinks[i][1], i, True)
+                printSinkSource(menu, sinks[i][1], i, True, width)
             else:
-                printSinkSource(menu, sinks[i][1], i, False)
+                printSinkSource(menu, sinks[i][1], i, False, width)
             menu.attroff(curses.A_REVERSE)
         else:
             if i == defaultSink:
-                printSinkSource(menu, sinks[i][1], i, True)
+                printSinkSource(menu, sinks[i][1], i, True, width)
             else:
-                printSinkSource(menu, sinks[i][1], i, False)
+                printSinkSource(menu, sinks[i][1], i, False, width)
 
-
-    #Print "sources" header
-    menu.hline(5 + sinkCount, 0, 0, 79)
+    # Print "sources" header
+    menu.hline(5 + sinkCount, 0, 0, width - 1)
     menu.move(6 + sinkCount, 0)
-    menu.addstr("  {:<65}  {:<7}".format("Source/Input:", "Active"))
-    menu.hline(7 + sinkCount, 0, 0, 79)
+    menu.addstr("  {}{x}  {:<7}".format("Source/Input:", "Active", x=" "*(width-25)))
+    menu.hline(7 + sinkCount, 0, 0, width - 1)
     menu.move(8 + sinkCount, 0)
 
-    #Print sources
-    #Print sinks
+    # Print sources
+    # Print sinks
     for i in range(len(sources)):
         if i + len(sinks) == index:
             menu.attron(curses.A_REVERSE)
             if i == defaultSource:
-                printSinkSource(menu, sources[i][1], i + len(sinks), True)
+                printSinkSource(menu, sources[i][1], i + len(sinks), True, width)
             else:
-                printSinkSource(menu, sources[i][1], i + len(sinks), False)
+                printSinkSource(menu, sources[i][1], i + len(sinks), False, width)
             menu.attroff(curses.A_REVERSE)
         else:
             if i == defaultSource:
-                printSinkSource(menu, sources[i][1], i + len(sinks), True)
+                printSinkSource(menu, sources[i][1], i + len(sinks), True, width)
             else:
-                printSinkSource(menu, sources[i][1], i + len(sinks), False)
+                printSinkSource(menu, sources[i][1], i + len(sinks), False, width)
 
-    #Print "hotkeys"
-    menu.hline(8 + sinkCount + sourceCount, 0, 0, 79)
-    menu.move(9 + sinkCount + sourceCount, 2)
-    menu.addstr("  Set active: s    Down: ")
-    menu.addch(curses.ACS_DARROW)
-    menu.addstr("/j    Up: ")
-    menu.addch(curses.ACS_UARROW)
-    menu.addstr("/k    Quit: e/q/<RET>    Refresh: Any")
+    # Print "hotkeys" 
+    menu.hline(8 + sinkCount + sourceCount, 0, 0, width - 1)
+    menu.move(9 + sinkCount + sourceCount, 1)
 
-    #Print box
+    # Padding for hotkey string if terminal is sufficiently large
+    if width >= 80:
+        menu.addstr(" "*int((width - 80)/2))
+        menu.addstr("Set active: s    Down: ")
+        menu.addch(curses.ACS_DARROW)
+        menu.addstr("/j    Up: ")
+        menu.addch(curses.ACS_UARROW)
+        menu.addstr("/k    Quit: e/q/<RET>/<ESC>    Refresh: Any")
+
+    # If menu is not large enough to accomodate the whole hotkey string, then 
+    # split in and write half of the string on one line, and half on the other 
+    # line. Works due to assumption that the terminal should not be smaller 
+    # than 40 chars wide
+
+    else:
+        menu.addstr(" "*int((width - 40)/2))
+        menu.addstr("Set active: s    Down: ")
+        menu.addch(curses.ACS_DARROW)
+        menu.addstr("/j    Up: ")
+        menu.addch(curses.ACS_UARROW)
+        menu.addstr("/k")
+        
+        menu.move(9 + sinkCount + sourceCount + 1, 1)
+        menu.addstr(" "*int((width - 40)/2))
+        menu.addstr("Quit: e/q/<RET>/<ESC>    Refresh: Any")
+
+    # Print box
     menu.box(0,0)
     menu.refresh()
 
@@ -143,8 +167,11 @@ def main():
     stdscr.clear()
     curses.noecho()
     curses.cbreak()
-    #Disable cursor
+    # Disable cursor
     curses.curs_set(0)
+    curses.set_escdelay(1) # Delay for escape characters, in this case it makes 
+                           # it so that pressing escape to quit does not have a 
+                           # 1 second delay
 
     numbers = [ord('1'), ord('2'), ord('3'), ord('4'), ord('5'),
                ord('6'), ord('7'), ord('8'), ord('9')]
@@ -154,16 +181,17 @@ def main():
 
     menu = None
 
-    #width:
-    # -Original implementation, set to 80
-    # -(Potential future feature, calculate maximum allowed rows, adjust text 
-    # accordingly)
-    width = 80
+    # width: Get the width of the terminal
+    width = curses.COLS 
 
-    # newwin:
-    # height, width, offsety, offsetx
-    # set offset height/width to make it not snug up against the edge of the 
-    # terminal 
+    # resizeInterrupt: If you enter a number, and then resize the window, nav 
+    # function will be interrupted. Variable takes it back into nav function 
+    # with character of previous state
+    resizeInterrupt = False
+    
+    # When resizeInterrupt is triggered, then it needs a backup of the character
+    chBackup = 0
+
     while True:
 
         sinks = getSinks()
@@ -175,37 +203,40 @@ def main():
         defaultSinkAt = 0
         defaultSourceAt = 0
 
-        #Find default sink
+        # Find default sink
         for i in range(len(sinks)):
             if defaultSink in sinks[i][0]:
                 defaultSinkAt = i
             
-        #Find default source
+        # Find default source
         for i in range(len(sources)):
             if defaultSource in sources[i][0]:
                 defaultSourceAt = i
 
-        #Convert sink description string into chunks of 60 characters
+        # Convert sink description string into chunks of lines that fit in 
+        # current terminal size 
         for i in range(len(sinks)):
             
             stringRaw = sinks[i][1]
             tmpList = list()
-            while len(stringRaw) > 60:
-                tmpList.append(stringRaw[0:60])
-                stringRaw = stringRaw[60:]
+            # width - 20 should give enough space to the other fields in the 
+            # table
+            while len(stringRaw) > width - 20:
+                tmpList.append(stringRaw[0:width - 20])
+                stringRaw = stringRaw[width - 20:]
 
             tmpList.append(stringRaw)
             sinks[i][1] = tmpList
 
-
-        #Convert source description string into chunks of 60 characters
+        # Convert source description string into chunks of lines that fit in 
+        # current terminal size
         for i in range(len(sources)):
             
             stringRaw = sources[i][1]
             tmpList = list()
-            while len(stringRaw) > 60:
-                tmpList.append(stringRaw[0:60])
-                stringRaw = stringRaw[60:]
+            while len(stringRaw) > width - 20:
+                tmpList.append(stringRaw[0:width - 20])
+                stringRaw = stringRaw[width - 20:]
 
             tmpList.append(stringRaw)
             sources[i][1] = tmpList
@@ -243,16 +274,22 @@ def main():
             menu.refresh()
 
         #Create menu
-
+        # newwin:
+        # height, width, offsety, offsetx
+        # set offset height/width to make it not snug up against the edge of 
+        # the terminal 
         menu = curses.newwin(height, width, 0, 0)
         menu.keypad(True)
         menu.box
     
         drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
-                    defaultSinkAt, defaultSourceAt)
+                    defaultSinkAt, defaultSourceAt, width)
         
         try:
-            ch = menu.getch()
+            if resizeInterrupt:
+                pass
+            else:
+                ch = menu.getch()
         except KeyboardInterrupt:
             break
 
@@ -264,11 +301,16 @@ def main():
             (index > 0):
             index -= 1
 
-        if (ch in numbers):
+        if (ch in numbers or resizeInterrupt):
             menu.move(5 + sinkCount + 3 + sourceCount + 5 - 2 , 2)
+            
+            if resizeInterrupt:
+                ch = chBackup
+                resizeInterrupt = False
+            
             menu.addstr(str(ch - 48))
             menu.refresh()
-            
+
             ch2 = menu.getch()
 
             if ch2 in numbers or ch2 == 48:
@@ -283,14 +325,26 @@ def main():
             elif ch2 == ord("k"):
                 index -= (ch - 48)
 
+            elif ch2 == curses.KEY_RESIZE:
+                resizeInterrupt = True
+                chBackup = ch
+
             if index >= len(sources) + len(sinks):
                 index = len(sources) + len(sinks) - 1
 
             if index <= 0:
                 index = 0
+
+        if (ch == curses.KEY_RESIZE or resizeInterrupt):
+            (_, width) = menu.getmaxyx()
+            #Design decision, will not accept terminal smaller than 40 columns
+            if width < 40:
+                #Issue: gets permanently stuck at 40 once triggered
+                width = 40
          
         # 10 = <RET> 
-        if ch == ord('q') or ch == ord('e') or ch == 10:
+        # 27 = <ESC>
+        if ch == ord('q') or ch == ord('e') or ch == 10 or ch == 27: 
             break 
 
         if ch == ord('s'):
