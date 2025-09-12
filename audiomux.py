@@ -81,7 +81,7 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
 
     # Print title
     menu.move(1,0)
-    menu.addstr("{x}{}{x}".format("Audiomux - v0.2.1", x=" "*int(width/2 - 8.5)))
+    menu.addstr("{x}{}{x}".format("Audiomux - v0.2.2", x=" "*int(width/2 - 8.5)))
     
     # Print "sinks" header
     menu.move(3, 0)
