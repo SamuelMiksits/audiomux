@@ -137,11 +137,11 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
     # Padding for hotkey string if terminal is sufficiently large
     if width >= 80:
         menu.addstr(" "*int((width - 80)/2))
-        menu.addstr("Set active: s    Down: ")
+        menu.addstr("Set active: s/<RET>    Down: ")
         menu.addch(curses.ACS_DARROW)
         menu.addstr("/j    Up: ")
         menu.addch(curses.ACS_UARROW)
-        menu.addstr("/k    Quit: e/q/<RET>/<ESC>    Refresh: Any")
+        menu.addstr("/k    Quit: e/q/<ESC>    Refresh: Any")
 
     # If menu is not large enough to accomodate the whole hotkey string, then 
     # split in and write half of the string on one line, and half on the other 
@@ -351,12 +351,12 @@ def main():
             if height < 15:
                 height = 15
          
-        # 10 = <RET> 
         # 27 = <ESC>
-        if ch == ord('q') or ch == ord('e') or ch == 10 or ch == 27:
+        if ch == ord('q') or ch == ord('e') or ch == 27:
             break 
 
-        if ch == ord('s'):
+        # 10 = <RET>
+        if ch == ord('s') or ch == 10:
             if index < len(sinks):
                 defaultSinkAt = index
                 os.system("pactl set-default-sink " + sinks[defaultSinkAt][0])
