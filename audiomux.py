@@ -74,7 +74,7 @@ def printSinkSource(menu, strings, index, default, width):
 
 # Function that prints the curses menu, takes the menu object
 def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount, 
-             defaultSink, defaultSource, width):
+             defaultSink, defaultSource, width, height):
     
     # Clears the screen from previous iterations
     menu.clear()
@@ -127,9 +127,12 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
             else:
                 printSinkSource(menu, sources[i][1], i + len(sinks), False, width)
 
+    # Filler rows to fill out whole terminal, depending on height
+    fillerCount = height - 13 - (sinkCount + sourceCount)
+
     # Print "hotkeys" 
-    menu.hline(8 + sinkCount + sourceCount, 0, 0, width - 1)
-    menu.move(9 + sinkCount + sourceCount, 1)
+    menu.hline(8 + sinkCount + sourceCount + fillerCount, 0, 0, width - 1)
+    menu.move(9 + sinkCount + sourceCount + fillerCount, 1)
 
     # Padding for hotkey string if terminal is sufficiently large
     if width >= 80:
@@ -153,7 +156,7 @@ def drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
         menu.addch(curses.ACS_UARROW)
         menu.addstr("/k")
         
-        menu.move(9 + sinkCount + sourceCount + 1, 1)
+        menu.move(9 + sinkCount + sourceCount + fillerCount + 1, 1)
         menu.addstr(" "*int((width - 40)/2))
         menu.addstr("Quit: e/q/<RET>/<ESC>    Refresh: Any")
 
@@ -181,8 +184,9 @@ def main():
 
     menu = None
 
-    # width: Get the width of the terminal
-    width = curses.COLS 
+    # Get the width and height of the terminal
+    width = curses.COLS
+    height = curses.LINES
 
     # resizeInterrupt: If you enter a number, and then resize the window, nav 
     # function will be interrupted. Variable takes it back into nav function 
@@ -266,8 +270,6 @@ def main():
         for i in range(len(sources)):
             sourceCount += len(sources[i][1])
 
-        height = 5 + sinkCount + 3 + sourceCount + 5
-
         #Clears menu, needed in case old menu had different size than new menu
         if menu != None:
             menu.clear()
@@ -283,7 +285,7 @@ def main():
         menu.box
     
         drawMenu(menu, sinks, sources, index, sinkCount, sourceCount,
-                    defaultSinkAt, defaultSourceAt, width)
+                    defaultSinkAt, defaultSourceAt, width, height)
         
         try:
             if resizeInterrupt:
@@ -302,7 +304,9 @@ def main():
             index -= 1
 
         if (ch in numbers or resizeInterrupt):
-            menu.move(5 + sinkCount + 3 + sourceCount + 5 - 2 , 2)
+            # Account for filler rows
+            fillerCount = height - 13 - (sinkCount + sourceCount)
+            menu.move(5 + sinkCount + 3 + sourceCount + fillerCount + 5 - 2 , 2)
             
             if resizeInterrupt:
                 ch = chBackup
@@ -336,15 +340,20 @@ def main():
                 index = 0
 
         if (ch == curses.KEY_RESIZE or resizeInterrupt):
-            (_, width) = menu.getmaxyx()
+            (height, width) = menu.getmaxyx()
             #Design decision, will not accept terminal smaller than 40 columns
             if width < 40:
                 #Issue: gets permanently stuck at 40 once triggered
                 width = 40
+
+            #Design decision, will not accept terminal smaller than 15 rows,
+            #(takes 15) rows to display 1 sink and 1 source
+            if height < 15:
+                height = 15
          
         # 10 = <RET> 
         # 27 = <ESC>
-        if ch == ord('q') or ch == ord('e') or ch == 10 or ch == 27: 
+        if ch == ord('q') or ch == ord('e') or ch == 10 or ch == 27:
             break 
 
         if ch == ord('s'):
